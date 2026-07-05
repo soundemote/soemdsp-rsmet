@@ -1,7 +1,7 @@
 # soemdsp-rsmet
 
 DSP modules built in the lineage of Robin Schmidt (RS-MET) designs,
-plus a baseline passive filter, compiled to native WebAssembly.
+compiled to native WebAssembly.
 
 ## Build target
 
@@ -12,7 +12,7 @@ with clang++.
 
 | Module | Export prefix | `_sample` parameters | Return / getters | Reference |
 |---|---|---|---|---|
-| Passive Filter | `soemdsp_passive_filter` | `input, mode (0=LP/1=HP/2=BP), lowFrequency, highFrequency, sampleRate` | `double` (direct return) | 1-pole RC, no external reference |
+| Passive Filter | `soemdsp_passive_filter` | `input, mode (0=LP/1=HP/2=BP), lowFrequency, highFrequency, sampleRate` | `double` (direct return) | LP mode matches RS-MET's `OnePoleFilter` `LOWPASS_IIT` coefficient formula (`a1 = exp(-w); b0 = 1 - a1`); HP mode matches its matched-Z-transform highpass (`b0 = 0.5*(1+a1)`), BP cascades both: https://github.com/RobinSchmidt/RS-MET/blob/work/Libraries/RobsJuceModules/rapt/Filters/General/OnePoleFilter.h |
 | Ladder Filter | `soemdsp_ladder_filter` | `input, frequency, resonance, mode (0-3), stages, sampleRate` | `double` (direct return) | RS-MET general-purpose ladder design |
 | RSMET Filter | `soemdsp_rsmet_filter` | `input, frequency (0-1 normalized), resonance (0-1 normalized), chaosAmount (0-1), mode (0-9), sampleRate` | `double` (direct return) | Ladder + tanh soft clip + noise injection, exponential frequency/resonance response curves |
 | TB-303 Filter | `soemdsp_tb303_filter` | `input, cutoff, resonance, mode, drive, sampleRate` | `double` (direct return) | Robin Schmidt's TeeBeeFilter (RS-MET / Open303): https://github.com/RobinSchmidt/RS-MET |
@@ -34,6 +34,6 @@ Max voice count: `kMaxVoices`.
 
 ## Attribution
 
-Ladder Filter, RSMET Filter, TB-303 Filter, and RobinSupersaw are
-derived from Robin Schmidt's (RS-MET) published work. Passive Filter is
-a standard 1-pole RC design with no external reference.
+Passive Filter, Ladder Filter, RSMET Filter, TB-303 Filter, and
+RobinSupersaw are all derived from Robin Schmidt's (RS-MET) published
+work.
