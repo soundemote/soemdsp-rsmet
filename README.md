@@ -1,34 +1,39 @@
 # soemdsp-rsmet
 
-DSP built in the lineage of Robin Schmidt's (RS-MET) work -- plus one
-plain circuit that started the whole thing.
+DSP modules built in the lineage of Robin Schmidt (RS-MET) designs,
+plus a baseline passive filter, compiled to native WebAssembly.
 
-## What's here
+## Build target
 
-- **Passive Filter** — a 1-pole RC filter in three modes (LP, HP, BP).
-  Not RS-MET's design, just the plainest, oldest circuit in the book --
-  the filter every other thing here eventually gets compared back to.
-- **Ladder Filter** — the general-purpose RS-MET-lineage ladder design,
-  gain-compensated, resonant stages.
-- **RSMET Filter** — a ladder filter preceded by a tanh soft clipper and
-  noise injection stage, exponential frequency/resonance curves, 10 modes.
-- **TB-303 Filter** — based on Robin Schmidt's TeeBeeFilter (RS-MET /
-  Open303): feedback highpass, resonance skewing, 15 output modes
-  (LP/HP/BP at 6/12/18/24 dB/octave).
-- **RobinSupersaw** — a direct transcription of Robin Schmidt's pitch
-  dithering technique (RS-MET's `PitchDitherOscs`): instead of a
-  bandlimited sawtooth built via PolyBLEP correction or a DSF closed
-  form, this oscillator dithers its own cycle length in the time domain,
-  stacking up to 9 independently-dithered, detuned voices into a
-  wall-of-saws supersaw.
+`--target=wasm32 -O3 -nostdlib -fno-exceptions -fno-rtti`. Compiled
+with clang++.
 
-Each compiled to a dependency-free WebAssembly module under
-`native_modules/`.
+## Modules
+
+| Module | Export prefix | `_sample` parameters | Return / getters | Reference |
+|---|---|---|---|---|
+| Passive Filter | `soemdsp_passive_filter` | `input, mode (0=LP/1=HP/2=BP), lowFrequency, highFrequency, sampleRate` | `double` (direct return) | 1-pole RC, no external reference |
+| Ladder Filter | `soemdsp_ladder_filter` | `input, frequency, resonance, mode (0-3), stages, sampleRate` | `double` (direct return) | RS-MET general-purpose ladder design |
+| RSMET Filter | `soemdsp_rsmet_filter` | `input, frequency (0-1 normalized), resonance (0-1 normalized), chaosAmount (0-1), mode (0-9), sampleRate` | `double` (direct return) | Ladder + tanh soft clip + noise injection, exponential frequency/resonance response curves |
+| TB-303 Filter | `soemdsp_tb303_filter` | `input, cutoff, resonance, mode, drive, sampleRate` | `double` (direct return) | Robin Schmidt's TeeBeeFilter (RS-MET / Open303): https://github.com/RobinSchmidt/RS-MET |
+| RobinSupersaw | `soemdsp_robin_supersaw` | `frequencyHz, sampleRate, detuneCents, voices, level` | `_left(handle)`, `_right(handle)`, `_mono(handle)` | Direct transcription of RS-MET's `PitchDitherOscs`: https://github.com/RobinSchmidt/RS-MET/blob/work/Libraries/RobsJuceModules/rapt/Generators/PitchDitherOscs.h |
+
+`Passive Filter`, `Ladder Filter`, `RSMET Filter`, and `TB-303 Filter`
+export `create(handle)`/`destroy(handle)`/`sample(...)`/`version()`.
+`RobinSupersaw` additionally exports `reset(handle)`.
+
+## RobinSupersaw implementation note
+
+Instead of bandlimiting a sawtooth via PolyBLEP correction or a DSF
+closed form, cycle length is dithered in the time domain: each cycle
+randomly selects one of 3 neighboring integer sample-counts
+(`lenMid-1, lenMid, lenMid+1`) with probabilities computed so the
+long-run average cycle length equals the desired fractional length.
+Up to 9 independently-dithered, detuned voices are summed per call.
+Max voice count: `kMaxVoices`.
 
 ## Attribution
 
-Ladder Filter, RSMET Filter, TB-303 Filter, and RobinSupersaw are all
-built directly on Robin Schmidt's (RS-MET) published designs --
-TeeBeeFilter / Open303 for the filters, `PitchDitherOscs` for
-RobinSupersaw. Credited here explicitly -- none of these four are
-original designs.
+Ladder Filter, RSMET Filter, TB-303 Filter, and RobinSupersaw are
+derived from Robin Schmidt's (RS-MET) published work. Passive Filter is
+a standard 1-pole RC design with no external reference.
